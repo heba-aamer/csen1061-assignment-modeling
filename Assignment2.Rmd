@@ -1,0 +1,287 @@
+---
+title: "Assignment 2"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(stargazer)
+library(MASS)
+library(pracma)
+library(tidyr)
+library(lubridate)
+library(XML)
+library(pastecs)
+library(corrplot)
+library(rpart)
+library(RWeka)
+library(grid)
+library(partykit)
+library(randomForest)
+library(e1071)
+library(kernlab)
+library(compare)
+library(caret)
+library(klaR)
+library(sampling)
+```
+
+
+## Preparing the 4 datasets
+#### sonar dataset
+
+```{r}
+
+# Reading the sonar data
+# -----------------------
+
+sonar.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/sonar.all-data", header = F, na.strings = c('?','NA'))
+names(sonar.data)
+str(sonar.data)
+summary(sonar.data)
+
+# Prepare the factors
+# -------------------
+
+names(sonar.data)[61] <- "target"
+names(sonar.data)
+
+sonar.data[,61] <- as.factor(sonar.data[,61])
+
+
+# Segment the data into (Training/Validation [80%])
+# -------------------------------------------------
+# and Testing [20%] partitions 
+# ----------------------------
+
+index <- srswor(as.integer(0.8*nrow(sonar.data)), nrow(sonar.data))
+sonar.data.train <- sonar.data[which(index==1),]
+sonar.data.test <- sonar.data[which(index==0),]
+
+summary(sonar.data.train)
+summary(sonar.data.test)
+```
+
+#### hepatitis data
+
+```{r}
+# Reading the hepatitis data
+# --------------------------
+
+hepatitis.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/hepatitis.data", header = F, na.strings = c('?', 'NA'))
+names(hepatitis.data)
+str(hepatitis.data)
+summary(hepatitis.data)
+
+names(hepatitis.data)[1] <- "target"
+names(hepatitis.data)
+
+# Prepare the factors
+# -------------------
+
+for (x in c(1,3:14,20)) {
+  hepatitis.data[,x] <- as.factor(hepatitis.data[,x])
+}
+
+# Segment the data into (Training/Validation [80%])
+# -------------------------------------------------
+# and Testing [20%] partitions 
+# ----------------------------
+
+index <- srswor(as.integer(0.8*nrow(hepatitis.data)), nrow(hepatitis.data))
+hepatitis.data.train <- hepatitis.data[which(index==1),]
+hepatitis.data.test <- hepatitis.data[which(index==0),]
+
+summary(hepatitis.data.train)
+summary(hepatitis.data.test)
+
+```
+
+#### spect data
+
+```{r}
+
+# Reading the diabetes training data
+# -----------------------------------
+
+spect.data.train <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/SPECT.train", header = F, na.strings = c('?', 'NA'))
+names(spect.data.train)
+str(spect.data.train)
+summary(spect.data.train)
+
+# Reading the diabetes testing data
+# -----------------------------------
+
+spect.data.test <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/SPECT.test", header = F, na.strings = c('?', 'NA'))
+names(spect.data.test)
+str(spect.data.test)
+summary(spect.data.test)
+
+# Prepare the factors
+# -------------------
+
+names(spect.data.train)[1] <- "target"
+names(spect.data.train)
+names(spect.data.test)[1] <- "target"
+names(spect.data.test)
+
+for (x in c(1:23)) {
+  spect.data.train[,x] <- as.factor(spect.data.train[,x])
+  spect.data.test[,x] <- as.factor(spect.data.test[,x])
+}
+
+```
+
+#### diabetes data
+
+```{r}
+# Reading the diabetes data
+# --------------------------
+
+diabetes.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/pima-indians-diabetes.data", header = F, na.strings = c('?', 'NA'))
+names(diabetes.data)
+str(diabetes.data)
+summary(diabetes.data)
+
+# Prepare the factors
+# -------------------
+
+names(diabetes.data)[9] <- "target"
+names(diabetes.data)
+
+diabetes.data[,9] <- as.factor(diabetes.data[,9])
+
+# Segment the data into (Training/Validation [80%])
+# -------------------------------------------------
+# and Testing [20%] partitions 
+# ----------------------------
+
+index <- srswor(as.integer(0.8*nrow(diabetes.data)), nrow(diabetes.data))
+diabetes.data.train <- diabetes.data[which(index==1),]
+diabetes.data.test <- diabetes.data[which(index==0),]
+
+summary(diabetes.data.train)
+summary(diabetes.data.test)
+
+```
+
+## Models Preparation
+
+#### Adding seed
+
+```{r}
+constant.seed <- 42
+
+```
+
+#### Generic function for building and evaluating models
+
+```{r}
+
+doAll <- function(current.data, current.data.train, current.data.test){
+
+# C4.5 Desicion Tree Model
+# -----------------------
+
+set.seed(constant.seed)
+current.data.c45model <- J48(target ~ ., data = current.data)
+table(current.data$target, predict(current.data.c45model))
+e <- evaluate_Weka_classifier(current.data.c45model, class = T)
+e
+summary(e)
+e$details
+e$string
+
+# ------------------------------------------------------------
+
+# 10-K Fold C4.5 Desicion Tree Model
+# ---------------------------------
+
+set.seed(constant.seed)
+current.data.c45model.kfold <- J48(target ~ ., data = current.data.train, control = Weka_control(R = T, N = 10))
+e1 <- evaluate_Weka_classifier(current.data.c45model.kfold, newdata = current.data.test,class = T)
+e1
+
+# ------------------------------------------------------------
+
+# Forest Tree Model
+# -----------------
+
+set.seed(constant.seed)
+#sonar.data.randomforest <- randomForest(V61 ~ ., data=sonar.data)
+t.ctrl <- trainControl(method = "cv", number = 10)
+current.data.randomforest <- train(target ~ ., data = current.data.train, method = "rf", trControl = t.ctrl)
+summary(current.data.randomforest)
+predictions.randomforest <- predict(current.data.randomforest, current.data.test, "raw")
+confusionMatrix(predictions.randomforest, current.data.test$target)
+
+# ------------------------------------------------------------
+
+# SVM Model
+# ---------
+
+set.seed(constant.seed)
+#sonar.data.randomforest <- randomForest(V61 ~ ., data=sonar.data)
+t.ctrl <- trainControl(method = "cv", number = 10)
+current.data.svm.linear <- train(target ~ ., data = current.data.train, method = "svmLinear", trControl = t.ctrl)
+predictions.svm.linear <- predict(current.data.svm.linear, current.data.test, "raw")
+confusionMatrix(predictions.svm.linear, current.data.test$target)
+
+
+set.seed(constant.seed)
+#sonar.data.randomforest <- randomForest(V61 ~ ., data=sonar.data)
+t.ctrl <- trainControl(method = "cv", number = 10)
+current.data.svm.radial <- train(target ~ ., data = current.data.train, method = "svmRadial", trControl = t.ctrl)
+predictions.svm.radial <- predict(current.data.svm.radial, current.data.test, "raw")
+confusionMatrix(predictions.svm.radial, current.data.test$target)
+
+
+# ------------------------------------------------------------
+
+# Naive Bayes Model
+# -----------------
+
+set.seed(constant.seed)
+t.ctrl <- trainControl(method = "cv", number = 10)
+current.data.naivebayes <- train(target ~ ., data = current.data.train, method = "nb", trControl = t.ctrl)
+predictions.naivebayes <- predict(current.data.naivebayes, current.data.test, "raw")
+confusionMatrix(predictions.naivebayes, current.data.test$target)
+
+# ------------------------------------------------------------
+
+# NN Model
+# --------
+
+set.seed(constant.seed)
+t.ctrl <- trainControl(method = "cv", number = 10)
+current.data.neuralnet <- train(target ~ ., data = current.data.train, method = "nnet", trControl = t.ctrl)
+predictions.neuralnet <- predict(current.data.neuralnet, current.data.test, "raw")
+confusionMatrix(predictions.neuralnet, current.data.test$target)
+
+# ------------------------------------------------------------
+
+# Bagging Model
+# -------------
+
+set.seed(constant.seed)
+current.data.bagging <- Bagging(target ~ ., data = current.data.train, control = Weka_control(W = list(J48, R = T, N = 10)))
+e2 <- evaluate_Weka_classifier(current.data.bagging, newdata = current.data.test,class = T)
+e2
+
+# ------------------------------------------------------------
+
+# Boosting Model
+# --------------
+
+set.seed(constant.seed)
+current.data.adaboost <- AdaBoostM1(target ~ ., data = current.data.train, control = Weka_control(W = list(J48, R = T, N = 10)))
+e3 <- evaluate_Weka_classifier(current.data.adaboost, newdata = current.data.test,class = T)
+e3  
+  
+  
+  
+}
+
+```
