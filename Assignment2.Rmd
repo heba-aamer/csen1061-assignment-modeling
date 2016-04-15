@@ -37,7 +37,7 @@ library(sampling)
 # Reading the sonar data
 # -----------------------
 
-sonar.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/sonar.all-data", header = F, na.strings = c('?','NA'))
+sonar.data <- read.csv("sonar.all-data", header = F, na.strings = c('?','NA'))
 names(sonar.data)
 str(sonar.data)
 summary(sonar.data)
@@ -70,7 +70,7 @@ summary(sonar.data.test)
 # Reading the hepatitis data
 # --------------------------
 
-hepatitis.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/hepatitis.data", header = F, na.strings = c('?', 'NA'))
+hepatitis.data <- read.csv("hepatitis.data", header = F, na.strings = c('?', 'NA'))
 names(hepatitis.data)
 str(hepatitis.data)
 summary(hepatitis.data)
@@ -106,7 +106,7 @@ summary(hepatitis.data.test)
 # Reading the diabetes training data
 # -----------------------------------
 
-spect.data.train <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/SPECT.train", header = F, na.strings = c('?', 'NA'))
+spect.data.train <- read.csv("SPECT.train", header = F, na.strings = c('?', 'NA'))
 names(spect.data.train)
 str(spect.data.train)
 summary(spect.data.train)
@@ -114,7 +114,7 @@ summary(spect.data.train)
 # Reading the diabetes testing data
 # -----------------------------------
 
-spect.data.test <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/SPECT.test", header = F, na.strings = c('?', 'NA'))
+spect.data.test <- read.csv("SPECT.test", header = F, na.strings = c('?', 'NA'))
 names(spect.data.test)
 str(spect.data.test)
 summary(spect.data.test)
@@ -140,7 +140,7 @@ for (x in c(1:23)) {
 # Reading the diabetes data
 # --------------------------
 
-diabetes.data <- read.csv("/home/mohammed/10th Semester/DataScience/Assignment/pima-indians-diabetes.data", header = F, na.strings = c('?', 'NA'))
+diabetes.data <- read.csv("pima-indians-diabetes.data", header = F, na.strings = c('?', 'NA'))
 names(diabetes.data)
 str(diabetes.data)
 summary(diabetes.data)
